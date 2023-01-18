@@ -8,7 +8,7 @@
 const int DIM = 10;
 const int NUM_OF_BOMBS = DIM * DIM / 3;
 const std::string ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const enum GAMESTATE {PLAYING, WIN, LOSS};
+enum GAMESTATE {PLAYING, WIN, LOSS};
 
 int numCovered = DIM * DIM;
 GAMESTATE gameState = PLAYING;
@@ -29,37 +29,49 @@ public:
     }
 
     std::string getChar(){
-        if(isFlag) return "F";
+        if(isFlag) return "\033[1;33mF\033[0m";
         if(isCovered) return "#";
-        if(isBomb) return "B";
+        if(isBomb) return "\033[1;31mB\033[0m";
         return surrounding == 0 ? " " : std::to_string(surrounding);
     }
 
     void flag() { isFlag = true; }
     void uncover();
+
+    bool onLeftEdge();
+    bool onRightEdge();
+    bool onTop();
+    bool onBottom();
 };
 
 Tile grid[DIM * DIM];
 
-void updateSurrounding(int index){
-    std::cout << "calculating surrounding\n";
-    int surr = 0;
-    for(int i = -1; i < 2; i++){
-        if(grid[index - DIM - i].isBomb) surr++;
-    }
-    if(grid[index-1].isBomb) surr++;
-    if(grid[index+1].isBomb) surr++;
-    for(int i = -1; i < 2; i++){
-        if(grid[index + DIM - i].isBomb) surr++;
-    }
-    grid[index].surrounding = surr;
-}
+bool Tile::onLeftEdge(){ int index = this - &grid[0]; return (index % DIM == 0); }
+bool Tile::onRightEdge(){ int index = this - &grid[0]; return (index % DIM == DIM - 1); }
+bool Tile::onTop(){ int index = this - &grid[0]; return (index % DIM == index); }
+bool Tile::onBottom(){ int index = this - &grid[0]; return (index + DIM) > (DIM * DIM - 1); }
 
 void Tile::uncover(){
+    if(isFlag) return;
     isCovered = false;
     numCovered--;
     if(isBomb) { gameState = LOSS; return; }
-    updateSurrounding(this - &grid[0]);
+    
+    int index = this - &grid[0];
+    int counter = 0;
+
+    if(grid[index - DIM - 1].isBomb && !onLeftEdge() && !onTop()) counter++;
+    if(grid[index - DIM].isBomb && !onTop()) counter++;
+    if(grid[index - DIM + 1].isBomb && !onRightEdge() && !onTop()) counter++;
+
+    if(grid[index - 1].isBomb && !onLeftEdge()) counter++;
+    if(grid[index + 1].isBomb && !onRightEdge()) counter++;
+
+    if(grid[index + DIM - 1].isBomb && !onLeftEdge() && !onBottom()) counter++;
+    if(grid[index + DIM].isBomb&& !onBottom()) counter++;
+    if(grid[index + DIM + 1].isBomb && !onRightEdge() && !onBottom()) counter++;
+
+    surrounding = counter;
 }
 
 void printGrid(){
@@ -145,7 +157,7 @@ int main(){
     }
 
     for(int i = 0; i < DIM * DIM; i++) {
-        grid[i].isCovered = false;
+        grid[i].uncover();
     }
     printGrid();
     std::cout << (gameState == WIN ? "VICTORY" : "Game Over") << std::endl;
