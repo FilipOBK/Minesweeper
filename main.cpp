@@ -3,10 +3,11 @@
 #include <cmath>
 #include <regex>
 #include <ctime>
+#include <utility>
 
 
 const int DIM = 10;
-const int NUM_OF_BOMBS = DIM * DIM / 3;
+const int NUM_OF_BOMBS = DIM * DIM / 4;
 const std::string ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 enum GAMESTATE {PLAYING, WIN, LOSS};
 
@@ -30,13 +31,35 @@ public:
 
     std::string getChar(){
         if(isFlag) return "\033[1;33mF\033[0m";
-        if(isCovered) return "#";
+        if(isCovered) return " ";
         if(isBomb) return "\033[1;31mB\033[0m";
-        return surrounding == 0 ? " " : std::to_string(surrounding);
+        switch(surrounding){
+            case 0:
+            return "0";
+            case 1:
+            return "\033[1;94m1\033[0m";
+            case 2:
+            return "\033[1;32m2\033[0m";
+            case 3:
+            return "\033[1;31m3\033[0m";
+            case 4:
+            return "\033[1;35m4\033[0m";
+            case 5:
+            return "\033[1;33m5\033[0m";
+            case 6:
+            return "\033[1;33m6\033[0m";
+            case 7:
+            return "\033[1;33m7\033[0m";
+            case 8:
+            return "\033[1;33m8\033[0m";
+            default:
+            return "!";
+        }
     }
 
-    void flag() { isFlag = true; }
+    void flag() { isFlag = isFlag ? false : true; }
     void uncover();
+    void uncoverSurrounding();
 
     bool onLeftEdge();
     bool onRightEdge();
@@ -74,6 +97,17 @@ void Tile::uncover(){
     surrounding = counter;
 }
 
+void Tile::uncoverSurrounding(){
+
+    int index = this - &grid[0];
+
+    if(!onTop() && !grid[index - DIM].isBomb) { grid[index - DIM].uncover(); }
+    if(!onLeftEdge() && !grid[index - 1].isBomb) { grid[index - 1].uncover(); }
+    if(!onRightEdge() && !grid[index + 1].isBomb) { grid[index + 1].uncover(); }
+    if(!onBottom() && !grid[index + DIM].isBomb) { grid[index + DIM].uncover(); }
+
+}
+
 void printGrid(){
     std::cout << "  ";
     for(int i = 0; i < DIM; i++) {std::cout << "  " << ALPHABET[i] << " ";}
@@ -98,7 +132,7 @@ void printGrid(){
 class GameController{
 
 public:
-    void getInput(){
+    std::pair<char, int> getPos(){
         std::string pos;
         int row, col;
         std::regex inputRegex ("[CF][A-Z][1-9][0-9]?$");
@@ -121,11 +155,55 @@ public:
                 validPos = (row <= DIM && col <= DIM);
             }
         } while (!validForm || !validPos);
-        
-        int index = (row - 1) * DIM + col - 1;
 
-        if(pos[0] == 'C') grid[index].uncover();
-        if(pos[0] == 'F') grid[index].flag();
+        int index = (row - 1) * DIM + col - 1;
+        char action = pos[0];
+        return std::pair<char,int>(action,index);
+    }
+
+    void firstClick(){
+
+        std::pair<char, int> input = getPos();
+        int index = input.second;
+        Tile* tile = &grid[index];
+
+        if(input.first == 'F') {
+            tile->flag();
+            return;
+        }
+
+        tile->uncover();
+        tile->uncoverSurrounding();
+
+        genBombs();
+
+        int extraIndex = rand() % 4;
+        switch(extraIndex){
+            case 0:
+            extraIndex = DIM * -1;
+            break;
+            case 1:
+            extraIndex = -1;
+            break;
+            case 2:
+            extraIndex = 1;
+            break;
+            case 3:
+            extraIndex = DIM;
+        }
+
+        tile += extraIndex;
+        std::cout << "ExtraIndex: " << extraIndex << "\n";
+        tile->uncoverSurrounding();
+
+
+    }
+
+    void getInput(){
+        std::pair<char, int> input = getPos();
+
+        if(input.first == 'C') grid[input.second].uncover();
+        if(input.first == 'F') grid[input.second].flag();
         
     }
 
@@ -140,6 +218,17 @@ public:
             }
 
         }
+        for(int i = 0; i < DIM * DIM; i++){
+            if(!grid[i].isCovered) grid[i].uncover();
+        }
+    }
+
+    void checkWin(){
+        int uncovered = 0;
+        for(int i = 0; i < DIM * DIM; i++) {
+            if(!grid[i].isCovered && !grid[i].isBomb) uncovered++;
+        }
+        if(uncovered == (DIM * DIM - NUM_OF_BOMBS)) gameState = WIN;
     }
 };
 
@@ -148,17 +237,17 @@ int main(){
     GameController controller;
     
     printGrid();
-    controller.getInput();
-    controller.genBombs();
-    
+    controller.firstClick();
+
     while(gameState == PLAYING){
         printGrid();
         controller.getInput();
+        controller.checkWin();
     }
-
+    GAMESTATE store = gameState;
     for(int i = 0; i < DIM * DIM; i++) {
         grid[i].uncover();
     }
     printGrid();
-    std::cout << (gameState == WIN ? "VICTORY" : "Game Over") << std::endl;
+    std::cout << (store == WIN ? "VICTORY" : "Game Over") << std::endl;
 }
