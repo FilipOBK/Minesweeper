@@ -58,8 +58,8 @@ public:
     }
 
     void flag() { isFlag = isFlag ? false : true; }
-    void uncover();
-    void uncoverSurrounding();
+    void uncover(bool first);
+    void uncoverSurrounding(bool first);
 
     bool onLeftEdge();
     bool onRightEdge();
@@ -74,7 +74,7 @@ bool Tile::onRightEdge(){ int index = this - &grid[0]; return (index % DIM == DI
 bool Tile::onTop(){ int index = this - &grid[0]; return (index % DIM == index); }
 bool Tile::onBottom(){ int index = this - &grid[0]; return (index + DIM) > (DIM * DIM - 1); }
 
-void Tile::uncover(){
+void Tile::uncover(bool first = false){
     if(isFlag) return;
     isCovered = false;
     numCovered--;
@@ -95,16 +95,30 @@ void Tile::uncover(){
     if(grid[index + DIM + 1].isBomb && !onRightEdge() && !onBottom()) counter++;
 
     surrounding = counter;
+    
+    if(surrounding != 0 || first) return;
+
+    std::cout << "Trying to clear surroundings at index: " << index << ", as it has " << surrounding << " surrounding" << std::endl;
+    if(!onLeftEdge()){
+        grid[index - 1].uncover();
+        if(!onTop()) { grid[index - DIM - 1].uncover(); grid[index - DIM].uncover(); }
+        if(!onBottom()) { grid[index + DIM - 1].uncover(); grid[index + DIM - 1].uncover(); }
+    }
+    if(!onRightEdge()){
+        grid[index + 1].uncover();
+        if(!onTop()) grid[index - DIM + 1].uncover();
+        if(!onBottom()) grid[index + DIM + 1].uncover();
+    }
 }
 
-void Tile::uncoverSurrounding(){
+void Tile::uncoverSurrounding(bool first = false){
 
     int index = this - &grid[0];
 
-    if(!onTop() && !grid[index - DIM].isBomb) { grid[index - DIM].uncover(); }
-    if(!onLeftEdge() && !grid[index - 1].isBomb) { grid[index - 1].uncover(); }
-    if(!onRightEdge() && !grid[index + 1].isBomb) { grid[index + 1].uncover(); }
-    if(!onBottom() && !grid[index + DIM].isBomb) { grid[index + DIM].uncover(); }
+    if(!onTop() && !grid[index - DIM].isBomb) { grid[index - DIM].uncover(first); }
+    if(!onLeftEdge() && !grid[index - 1].isBomb) { grid[index - 1].uncover(first); }
+    if(!onRightEdge() && !grid[index + 1].isBomb) { grid[index + 1].uncover(first); }
+    if(!onBottom() && !grid[index + DIM].isBomb) { grid[index + DIM].uncover(first); }
 
 }
 
@@ -172,8 +186,8 @@ public:
             return;
         }
 
-        tile->uncover();
-        tile->uncoverSurrounding();
+        tile->uncover(true);
+        tile->uncoverSurrounding(true);
 
         genBombs();
 
@@ -193,7 +207,6 @@ public:
         }
 
         tile += extraIndex;
-        std::cout << "ExtraIndex: " << extraIndex << "\n";
         tile->uncoverSurrounding();
 
 
