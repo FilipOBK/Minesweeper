@@ -27,7 +27,26 @@ Tile** Grid::GetGrid()
 	return m_grid;
 }
 
-void Grid::GenerateBombs(std::vector<int> index_blacklist, unsigned int seed)
+void Grid::GenerateBombs(unsigned int quantity, std::vector<int> index_blacklist, unsigned int seed)
 {
+	int available_tiles = (m_dim * m_dim) - index_blacklist.size();
+	if (quantity > available_tiles)
+		throw std::domain_error("Not enough tiles to place bombs");
+
 	srand(seed);
+
+	for (int i = 0; i < quantity; i++)
+	{
+		int index = static_cast<int>(rand() * (m_dim * m_dim));
+		bool invalid = std::find(index_blacklist.begin(), index_blacklist.end(), index) != index_blacklist.end();
+		if (invalid)
+		{
+			i--;
+			continue;
+		}
+		
+		auto [row, col] = GetGridIndices(index);
+		m_grid[row][col].bomb = true;
+		index_blacklist.push_back(index); // Disallow same index to 'bombed' again
+	}
 }
