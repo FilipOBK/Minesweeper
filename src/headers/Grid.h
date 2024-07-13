@@ -8,6 +8,7 @@ class Grid
 {
 private:
 	unsigned char m_dim;
+	unsigned int num_bombs, num_flags, num_uncovered;
 	Tile** m_grid;
 
 public:
@@ -16,21 +17,17 @@ public:
 
 	Tile** GetGrid();
 	unsigned char GetDim();
+	unsigned int GetNumBombs();
+	void SetNumBombs(unsigned int num_bombs);
+	unsigned int GetNumFlags();
+	unsigned int GetNumUncovered();
 	inline int NumTiles() const { return m_dim * m_dim; }
 
-	inline bool OnTop(const Tile& tile) const { return tile.index % m_dim == 0; }
-	inline bool OnLeft(const Tile& tile) const { return tile.index < m_dim; }
-	inline bool OnRight(const Tile& tile) const { return tile.index >= (m_dim - 1) * m_dim; }
-	inline bool OnBottom(const Tile& tile) const { return tile.index % m_dim == m_dim - 1; }
-
 	bool Uncover(int index);
-	inline void Flag(int index)
-	{
-		auto [row, col] = GetGridIndices(index);
-		m_grid[row][col].Flag();
-	}
+	void Flag(int index);
 
-	void GenerateBombs(unsigned int quantity, std::vector<int> index_blacklist, unsigned int seed);
+	void GenerateBombs(std::vector<int> index_blacklist, unsigned int seed);
+	std::vector<Tile*> Surrounding(int index);
 private:
 	void UncoverSurrounding(int index);
 	inline std::pair<int, int> GetGridIndices(int index)
