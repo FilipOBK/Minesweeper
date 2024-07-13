@@ -27,6 +27,25 @@ Tile** Grid::GetGrid()
 	return m_grid;
 }
 
+unsigned char Grid::GetDim()
+{
+	return m_dim;
+}
+
+bool Grid::Uncover(int index)
+{
+	auto [row, col] = GetGridIndices(index);
+	if (!m_grid[row][col].covered)
+		return;
+
+	m_grid[row][col].Uncover();
+	if (m_grid[row][col].bomb)
+		return false;
+
+
+	return true;
+}
+
 void Grid::GenerateBombs(unsigned int quantity, std::vector<int> index_blacklist, unsigned int seed)
 {
 	int available_tiles = (m_dim * m_dim) - index_blacklist.size();
@@ -37,7 +56,7 @@ void Grid::GenerateBombs(unsigned int quantity, std::vector<int> index_blacklist
 
 	for (int i = 0; i < quantity; i++)
 	{
-		int index = static_cast<int>(rand() * (m_dim * m_dim));
+		int index = static_cast<int>(rand() % NumTiles());
 		bool invalid = std::find(index_blacklist.begin(), index_blacklist.end(), index) != index_blacklist.end();
 		if (invalid)
 		{
@@ -48,5 +67,45 @@ void Grid::GenerateBombs(unsigned int quantity, std::vector<int> index_blacklist
 		auto [row, col] = GetGridIndices(index);
 		m_grid[row][col].bomb = true;
 		index_blacklist.push_back(index); // Disallow same index to 'bombed' again
+	}
+
+	CalculateSurrounding();
+}
+
+void Grid::UncoverSurrounding(int index)
+{
+	// TODO
+}
+
+void Grid::CalculateSurrounding()
+{
+	for (int row = 0; row < m_dim; row++)
+	{
+		for (int col = 0; col < m_dim; col++)
+		{
+			if (!m_grid[row][col].bomb)
+				continue;
+
+			if (row > 0) // Not on top of board
+			{
+				m_grid[row - 1][col].surrounding++;
+				if (col > 0)
+					m_grid[row - 1][col - 1].surrounding++;
+				if (col < m_dim - 1)
+					m_grid[row - 1][col + 1].surrounding++;
+			}
+			if (row < m_dim - 1) // Not on bottom of board
+			{
+				m_grid[row + 1][col].surrounding++;
+				if (col > 0)
+					m_grid[row + 1][col - 1].surrounding++;
+				if (col < m_dim - 1)
+					m_grid[row + 1][col + 1].surrounding++;
+			}
+			if (col > 0)
+				m_grid[row][col - 1].surrounding++;
+			if (col < m_dim - 1)
+				m_grid[row][col + 1].surrounding++;
+		}
 	}
 }
