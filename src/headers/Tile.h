@@ -12,6 +12,6 @@ struct Tile
 	bool covered;
 
 	std::string GetChar();
-	void flag();
-	void uncover();
+	void Flag();
+	void Uncover();
 };

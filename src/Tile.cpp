@@ -30,12 +30,12 @@ std::string Tile::GetChar()
     }
 }
 
-void Tile::flag()
+void Tile::Flag()
 {
     if (covered) flagged = !flagged;
 }
 
-void Tile::uncover()
+void Tile::Uncover()
 {
     covered = false;
 }
