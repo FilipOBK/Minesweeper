@@ -3,9 +3,8 @@
 
 int main()
 {
-    Manager manager = Manager(std::make_shared<Grid>(5), Difficulty::EASY);
+    Manager manager = Manager(std::make_shared<Grid>(10), Difficulty::MEDIUM);
     manager.Start();
     
-    std::cin.get();
     return 0;
 }
