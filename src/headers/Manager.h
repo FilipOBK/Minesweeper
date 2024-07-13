@@ -5,7 +5,7 @@
 #include "Grid.h"
 
 enum class Difficulty { EASY = 1, MEDIUM, HARD };
-enum class Move { CLICK, FLAG };
+enum class Move { CLICK = 'C', FLAG = 'F', QUIT = 'Q' };
 
 class Manager
 {
@@ -26,4 +26,5 @@ private:
 	std::pair<Move, int> GetInput();
 	void Initialize();
 	void Play();
+	void End();
 };
